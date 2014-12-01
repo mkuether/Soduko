@@ -1,0 +1,380 @@
+<!DOCTYPE: html>
+<html>
+  <head>
+    <style>
+      h1 {
+          text-align: center;
+}
+
+      button, input {
+        border-width: 5;
+        height: 40;
+        width: 40;
+        font-size: 18;
+        font-weight: bold;
+}
+      .evenReady {
+        color: black;
+        background-color: white;
+}
+
+      .oddReady {
+        color: black;
+        background-color: silver;
+}
+
+      .evenLocked {
+        color: red;
+        background-color: white;
+}
+
+      .oddLocked {
+        color: red;
+        background-color: silver;
+}
+      #Start {
+        border-width: 5;
+        height: 40;
+        width: 150;
+        font-size: 18;
+        font-weight: bold;
+}
+
+
+    </style>
+
+    <script>
+
+
+      var boxAry = [];
+      var pathAry = [];
+
+      var Box = function(elementId){
+        this.id = elementId;
+        this.valCount = 0;
+        this.curVal = 0;
+        this.rowNum = 0;
+        this.colNum = 0;
+        this.blockNum = 0;
+        this.blockPos = 0;
+        this.valAry = [];
+        this.locked = "false";
+      }
+
+      Box.prototype.setVal = function(numVal) {
+        this.curVal = numVal;
+        this.valCount = 0;
+      }
+
+      Box.prototype.setCol = function(thisCol) {
+        this.colNum = thisCol;
+      }
+
+      Box.prototype.setRow = function(thisRow) {
+        this.rowNum = thisRow;
+      }
+
+      Box.prototype.setBlock = function(thisBlock) {
+        this.blockNum = thisBlock;
+      }
+
+      Box.prototype.setBlockPos = function(thisBlockPos) {
+        this.blockPos = thisBlockPos;
+      }
+
+      Box.prototype.findCount = function(){
+        var legalCount = 0;
+        var checkLegal = true;
+        for(var checkVals = 1;checkVals < 10;checkVals++) {
+          if(checkLegal) legalCount++;
+        }        
+
+        return legalCount;
+      }
+
+      Box.prototype.clearVal = function(){
+      }
+
+      Box.prototype.testNum = function(numVal) {
+        var isLegal = false;
+        var numConflict  = 0;
+        numConflict = numConflict + this.testCol(numVal);
+        if(numConflict == 0) numConflict += this.testRow(numVal);
+        if(numConflict == 0) numConflict += this.testBlock(numVal);
+        if(numConflict == 0) isLegal = true;
+
+        return isLegal; 
+      }
+
+      Box.prototype.testCol = function(testVal) {
+        var countConflicts = 0;
+        for(var testRow = 1; testRow < 10; testRow++){
+          if(testRow != this.rowNum){
+            //alert("Row " + testRow + " = " + boxAry[this.colNum][testRow].curVal);
+            if(boxAry[this.colNum][testRow].curVal == testVal){
+              countConflicts++;
+              break;
+            }
+          }
+        }
+        return countConflicts;
+      }
+
+      Box.prototype.testRow = function(testVal) {
+        var countConflicts = 0;
+        for(var testCol = 1; testCol < 10; testCol++){
+          if(testCol != this.colNum){
+            if(boxAry[testCol][this.rowNum].curVal == testVal){
+              countConflicts++;
+              break;
+            }
+          }
+        }
+        return countConflicts;
+      }
+
+      Box.prototype.testBlock = function(testVal) {
+        var countConflicts = 0;
+        var stringBlockPos = this.blockPos.toString();
+        var colOffSet = stringBlockPos.substr(0,1);
+        var rowOffSet = stringBlockPos.substr(1,1);
+        //alert("Col offSet = " + colOffSet);
+        //alert("Row offset = " + rowOffSet);
+        var startCol = this.colNum - (Number(colOffSet)-1);
+        var startRow = this.rowNum - (Number(rowOffSet)-1);
+        outerloop:
+        for(var blockCol = startCol;blockCol < startCol+3;blockCol++){
+          for(var blockRow = startRow;blockRow < startRow+3;blockRow++){
+            if((blockCol != this.colNum) && (blockRow != this.rowNum)){
+              if(boxAry[blockCol][blockRow].curVal == testVal){
+                countConflicts++;
+                break outerloop;
+              }
+            }
+          }
+        }
+        return countConflicts;
+      }
+
+//Create 81 box objects - 1 for each button in a 2D array
+      var idStrings = "";
+      var count=0;
+
+      for(var iCol=1;iCol < 10; iCol++){
+        boxAry[iCol] = [];
+        var blockPosCol = iCol;
+        if(blockPosCol > 6) blockPosCol = blockPosCol - 6;
+        if(blockPosCol > 3) blockPosCol = blockPosCol - 3;
+
+        for (var iRow = 1; iRow < 10; iRow++){
+          var blockPosRow = iRow;
+          if(blockPosRow > 6) blockPosRow = blockPosRow - 6;
+          if(blockPosRow > 3) blockPosRow = blockPosRow - 3;
+
+          boxAry[iCol][iRow] = null;
+          var boxId = "X" + iCol.toString() + iRow.toString();
+          boxAry[iCol][iRow] = new Box(boxId);
+          boxAry[iCol][iRow].setCol(iCol);
+          boxAry[iCol][iRow].setRow(iRow);
+          var blockCol = Math.floor((iCol-1)/3) + 1;
+          var blockRow = Math.floor((iRow-1)/3) + 1;
+          var blockId = blockCol * 10 + blockRow;
+          boxAry[iCol][iRow].setBlock(blockId);
+
+          var blockPos = blockPosCol * 10 + blockPosRow;
+          boxAry[iCol][iRow].setBlockPos(blockPos);
+          
+        }
+      }
+
+      function changeNumber(btn) {
+        var btnObj = document.getElementById(btn.id);
+        var btnCol = Number(btn.id.toString().substr(1,1));
+        var btnRow = Number(btn.id.toString().substr(2,1));
+        //alert("Button ID = " + btn.id.toString());
+        //alert(btnCol.toString());
+        //alert(boxAry[btnCol][btnRow].colNum);
+        //alert(btnRow.toString());
+        //alert(boxAry[btnCol][btnRow].rowNum);
+        //alert("Block Number = " + boxAry[btnCol][btnRow].blockNum);
+        //alert("Block Position = " + boxAry[btnCol][btnRow].blockPos);
+
+        var classType = btn.className;
+        var classString = classType.toString();
+        if (classString.substr(0,3) == "odd") {
+          classString = "odd";
+        }
+        else{
+          classString = "even";
+        }
+        var btnVal = btnObj.innerHTML;
+
+        if (btnVal.length < 1) {
+           btnVal = "0";
+        }
+        var iVal = Number(btnVal);
+        
+        do {
+        var valConflicts = 0;
+        iVal++;
+        valConflicts = valConflicts + boxAry[btnCol][btnRow].testCol(iVal);
+        //alert("Col Conflicts = " + valConflicts);
+        valConflicts = valConflicts + boxAry[btnCol][btnRow].testRow(iVal);
+        //alert("Row Conflicts = " + valConflicts);
+        valConflicts = valConflicts + boxAry[btnCol][btnRow].testBlock(iVal);
+        //alert("Block Conflicts = " + valConflicts);
+        var Status = "iVal = " + iVal + " | conflicts = " + valConflicts;
+        //alert(Status);
+        } while (valConflicts > 0 && iVal < 10)
+        sVal = iVal.toString();
+        
+        if(sVal == "10") {
+          sVal = " ";
+          iVal = 0;
+          btn.className = classString + "Ready";
+        }
+        else {
+          btn.className = classString + "Locked";
+        }
+        boxAry[btnCol][btnRow].setVal(iVal);
+        btnObj.innerHTML = sVal;
+      }
+
+      function findNextBlock() {
+        var lowNum = 10;
+        var pickBtn = "";
+        outerloop:
+        for(var colCheck = 1;colCheck < 10;colCheck++){
+          for(var rowCheck = 1;rowCheck < 10; rowCheck++) {
+            var thisBtn = boxAry[iCol][iRow];
+            if(thisBtn.locked = "false") {
+              if (thisBtn.valCount > 0 && thisBtn.valCount < lowNum) {
+                pickBtn = thisBtn.id;
+              }
+            }
+            if(lowNum == 1) break outerloop;
+          }
+        }
+        return pickBtn;
+      }
+
+      function solvePuzzleSmarter() {
+//         var thisBtn = document.getElementById("X55");
+//         thisBtn.innerHTML = "8";
+
+      } // fnc solvePuzzleSmarter
+
+    </script>
+ 
+  </head>
+  <body>
+    <h1>Sudoko Test</h1>
+      <form>
+        <button id="Start" type="button" onClick = "solvePuzzleSmarter(document)">Solve Now</button>
+      </form>
+      <table>
+      <tr>
+        <td><button class="evenReady" id="X11" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X21" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X31" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X41" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X51" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X61" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X71" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X81" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X91" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="evenReady" id="X12" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X22" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X32" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X42" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X52" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X62" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X72" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X82" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X92" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="evenReady" id="X13" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X23" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X33" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X43" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X53" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X63" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X73" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X83" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X93" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+
+      <tr>
+        <td><button class="oddReady" id="X14" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X24" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X34" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X44" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X54" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X64" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X74" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X84" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X94" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="oddReady" id="X15" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X25" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X35" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X45" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X55" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X65" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X75" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X85" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X95" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="oddReady" id="X16" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X26" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X36" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X46" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X56" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X66" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X76" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X86" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X96" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="evenReady" id="X17" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X27" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X37" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X47" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X57" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X67" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X77" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X87" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X97" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="evenReady" id="X18" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X28" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X38" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X48" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X58" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X68" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X78" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X88" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X98" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+      <tr>
+        <td><button class="evenReady" id="X19" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X29" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X39" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X49" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X59" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="oddReady" id="X69" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X79" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X89" type="button" onClick = "changeNumber(this)"></button></td>
+        <td><button class="evenReady" id="X99" type="button" onClick = "changeNumber(this)"></button></td>
+      </tr>
+    </table>
+
+
+  </body>
+</html>
